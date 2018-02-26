@@ -1,0 +1,98 @@
+---
+title: "Woolworth Store Sales Model"
+author: "Ashish Singh"
+date: "February 25, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo = FALSE, message=FALSE}
+library(ggplot2)
+library(reshape2)
+library(knitr)
+library(formattable)
+library(dplyr)
+library(xts)
+
+#woolworth_sales <- read.csv("https://raw.githubusercontent.com/winappsdave/winapps_challenge/master/stores.csv", header = TRUE, sep=",", check.names = FALSE)
+woolworth_sales <- read.csv("/media/thethakuri/Share/stores.csv")
+woolworth_sales$Date <- as.Date(woolworth_sales$Date, format= "%d/%m/%Y")
+```
+# Woolworth Weekly Sales Model
+## $$\widehat{Y} = 39243.231 + 89263.9H + 1.382S - 1785.266T - 6533.111U - 616.662C + 75.078P  - 38.735P_{65} + 58.399P_{18}$$
+    where   
+      
+    Y = expected weekly sales of the store
+    H = 1 if Holiday else 0
+    S = the size of the store
+    T = average temperature in the region
+    U = the unemployment rate
+    C = the unemployment rate
+    P = population in the region
+    P_65 = population over 65 in the region
+    P_18 = population under 18 in the region
+    
+    We have, 
+    Adjusted R-squared = 0.8806
+
+# Time Series Analysis
+```{r echo=FALSE}
+plot_ts <- function(store_no){
+  store_ts <- subset(woolworth_sales, Store==store_no, select = c(Date, Weekly_Sales))
+  store_ts$Weekly_Sales <- xts(store_ts$Weekly_Sales, order.by = store_ts$Date)
+  return(plot(apply.monthly(store_ts$Weekly_Sales, mean), ylim = range(store_ts$Weekly_Sales), main = "", ylab = "Weekly Sales in Thousands"))
+}
+```
+
+## Time Series Analysis for Store 1
+```{r echo=FALSE}
+plot_ts(1)
+```
+
+## Time Series Analysis for Store 13
+```{r echo=FALSE}
+plot_ts(13)
+```
+
+## Time Series Analysis for Store 27
+```{r echo=FALSE}
+plot_ts(27)
+```
+
+
+# Sales Data Summary
+```{r echo=FALSE}
+#Omitting Date & Store No.
+woolworth_sales <- select(woolworth_sales, -Date, -Store)
+summary(woolworth_sales)
+```
+# Linear multiple regression model
+```{r echo=FALSE}
+sales_lm <- lm(Weekly_Sales ~ ., data = woolworth_sales)
+summary(sales_lm)
+```
+As Fuel Price and Average earnings are of low significance, we will drop them from our model
+```{r}
+sales_lm <- lm(Weekly_Sales ~ ., data = select(woolworth_sales, -Fuel_Price, -Average_earning))
+summary(sales_lm)
+```
+As we can see, there is no change in our R-squared of 0.8808
+
+# Plotting model fit
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(sales_lm)
+```
+# Our coefficients
+```{r}
+round(sales_lm$coefficients, digits = 3)
+
+```
